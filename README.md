@@ -74,5 +74,7 @@ python gdrive_transfer.py \
 
 - The tool requests the `https://www.googleapis.com/auth/drive` scope to allow ownership changes.
 - Files you do **not** own are skipped automatically.
+- Google requires notification emails to be sent for ownership transfers, so recipients will
+  receive transfer emails automatically.
 - Google imposes limits: ownership transfers may be restricted by domain policies or file types (e.g., some shared drives).
 - Errors for individual files are logged but do not stop the rest of the transfers.

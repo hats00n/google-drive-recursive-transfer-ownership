@@ -146,7 +146,9 @@ def transfer_file(service, file_id: str, target_email: str) -> None:
         body=permission,
         transferOwnership=True,
         supportsAllDrives=True,
-        sendNotificationEmail=False,
+        # Google requires notification emails when transferring ownership.
+        # Omitting or setting this to False will raise an error for ownership transfers.
+        sendNotificationEmail=True,
     ).execute()
 
 
