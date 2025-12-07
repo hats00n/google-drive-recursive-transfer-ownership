@@ -41,12 +41,22 @@ python gdrive_transfer.py \
 
 Pass one or more Drive folder IDs (found in the folder URL). Contents are traversed recursively and only items owned by the source are changed.
 
+With a folder list (only items under those folders are considered):
+
 ```bash
 python gdrive_transfer.py \
   --source-email alice@example.com \
   --target-email bob@example.com \
   --folder-id 1a2B3cFolderId \
   --folder-id AnotherFolderId
+```
+
+Without a folder list (everything owned by the source account is considered):
+
+```bash
+python gdrive_transfer.py \
+  --source-email alice@example.com \
+  --target-email bob@example.com
 ```
 
 ### Preview without making changes
@@ -75,6 +85,12 @@ python gdrive_transfer.py \
 - The tool requests the `https://www.googleapis.com/auth/drive` scope to allow ownership changes.
 - Files you do **not** own are skipped automatically.
 - Google requires notification emails to be sent for ownership transfers, so recipients will
-  receive transfer emails automatically.
+  receive transfer emails automatically. The target email may get a large number of notifications;
+  have them open their inbox and accept the pending ownership requests in bulk to speed things up.
 - Google imposes limits: ownership transfers may be restricted by domain policies or file types (e.g., some shared drives).
+- The script mimics the Drive UI by first granting the target user editor access and then requesting ownership with a
+  `pendingOwner` permission, which avoids "consent required" errors when the recipient has not previously been shared on the
+  file and aligns with recent Drive API changes.
+- Folder IDs are not the same as folder names. To capture a specific folder, open it in the Drive web UI and copy the
+  ID segment from the URL (between `/folders/` and the next `/`). Any other method that yields the folder ID works as well.
 - Errors for individual files are logged but do not stop the rest of the transfers.

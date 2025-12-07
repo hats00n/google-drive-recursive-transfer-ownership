@@ -140,15 +140,51 @@ def list_owned_in_folders(service, source_email: str, folder_ids: Iterable[str])
 
 
 def transfer_file(service, file_id: str, target_email: str) -> None:
-    permission = {"type": "user", "role": "owner", "emailAddress": target_email}
+    # Google requires that the recipient already has edit access before ownership can
+    # be transferred. We first ensure a writer permission exists, then request
+    # ownership by setting a pending owner permission (role=writer + pendingOwner).
+    editor_permission = {
+        "type": "user",
+        "role": "writer",
+        "emailAddress": target_email,
+    }
+
     service.permissions().create(
         fileId=file_id,
-        body=permission,
-        transferOwnership=True,
+        body=editor_permission,
         supportsAllDrives=True,
-        # Google requires notification emails when transferring ownership.
-        # Omitting or setting this to False will raise an error for ownership transfers.
-        sendNotificationEmail=True,
+        sendNotificationEmail=False,
+    ).execute()
+
+    # 2) Find the permission ID for the target email.
+    #    We'll list permissions and match by emailAddress.
+    permission_id = None
+    try:
+        perms = service.permissions().list(
+            fileId=file_id,
+            supportsAllDrives=True,
+            fields="permissions(id,emailAddress,role,type,pendingOwner)"
+        ).execute()
+        for p in perms.get("permissions", []):
+            if p.get("type") == "user" and p.get("emailAddress", "").lower() == target_email.lower():
+                permission_id = p.get("id")
+                break
+    except HttpError as e:
+        raise RuntimeError(f"Could not list permissions for file {file_id}: {e}")
+
+    if permission_id is None:
+        raise Exception("Could not find the permission id")
+
+    update_body = {
+        "role": "writer",
+        "pendingOwner": True,
+    }
+
+    service.permissions().update(
+        fileId=file_id,
+        permissionId=permission_id,
+        body=update_body,
+        supportsAllDrives=True,
     ).execute()
 
 
